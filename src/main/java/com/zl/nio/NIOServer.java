@@ -8,6 +8,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * NIO服务端
@@ -15,8 +17,11 @@ import java.util.Iterator;
  * @author jacky
  */
 public class NIOServer {
+
     // 通道管理器
     private Selector selector;
+
+    ExecutorService newCachedThreadPool = Executors.newCachedThreadPool();
 
     /**
      * 获得一个ServerSocket通道，并对该通道做一些初始化的工作
@@ -47,10 +52,10 @@ public class NIOServer {
         System.out.println("服务端启动成功！");
         // 轮询访问selector
         while (true) {
-            // 当注册的事件到达时，方法返回；否则,该方法会一直阻塞
-            //selector.select();
-            int select = selector.select(1000);
-            System.out.println(select);
+            // 当注册的事件到达时，方法返回，继续向下执行；否则,该方法会一直阻塞
+            selector.select();
+            //int select = selector.select(1000);
+            //System.out.println(select);
             // 获得selector中选中的项的迭代器，选中的项为注册的事件
             Iterator<?> ite = this.selector.selectedKeys().iterator();
             while (ite.hasNext()) {
@@ -59,6 +64,19 @@ public class NIOServer {
                 ite.remove();
 
                 handler(key);
+
+                //不能通过下面这种方式采取多线程,会空指针异常
+                /*newCachedThreadPool.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            handler(key);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });*/
+
             }
         }
     }
